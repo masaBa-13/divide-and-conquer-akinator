@@ -8,6 +8,6 @@
     "binding": "ASSETS"
   },
   "vars": {
-    "SITE_URL": "https://akinator.miraidai.workers.dev"
+    "SITE_URL": "https://divide-and-conquer-akinator.miraidai.workers.dev"
   }
 }
