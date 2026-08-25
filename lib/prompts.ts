@@ -87,6 +87,7 @@ export function buildResultSystemPrompt(frameworks: FrameworkName[]): string {
 - 説明は具体的で実行可能な内容にする
 - 優先度はhigh（重要・緊急）、medium（重要・非緊急）、low（参考程度）で設定
 - 推定時間は「30分」「1時間」「1週間」などの形式で記載
+- **PDCAサイクルの場合**: タイトルの先頭に必ず「P：」「D：」「C：」「A：」のいずれかを付ける（例: 「P：目標設定」「D：施策実行」）。P・D・C・Aそれぞれ最低1つずつアクションを含めること
 
 ## フレームワーク別 visualization フォーマット
 
