@@ -47,6 +47,7 @@ export function Character({ state }: CharacterProps) {
         height={280}
         style={{ objectFit: 'contain' }}
         priority
+        unoptimized
       />
     </div>
   )

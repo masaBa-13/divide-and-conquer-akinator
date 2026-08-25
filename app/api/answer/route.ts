@@ -79,7 +79,16 @@ export async function POST(request: NextRequest): Promise<Response> {
       )
 
       const validated = AnswerResponseSchema.safeParse(raw)
-      const result = validated.success ? fixAnswerType(validated.data) : FALLBACK
+      let result = validated.success ? fixAnswerType(validated.data) : FALLBACK
+
+      // 4問未満では強制的に継続させる
+      const questionCount = (parsed.data.history as ConversationEntry[]).filter(
+        (e) => e.role === "assistant"
+      ).length
+      if (result.done && questionCount < 4) {
+        result = { ...result, done: false }
+      }
+
       await send("result", result)
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
