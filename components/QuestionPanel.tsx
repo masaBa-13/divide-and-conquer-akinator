@@ -232,12 +232,6 @@ export function QuestionPanel() {
               <textarea
                 value={freeText}
                 onChange={(e) => setFreeText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey && freeText.trim()) {
-                    e.preventDefault()
-                    handleAnswer(freeText.trim())
-                  }
-                }}
                 placeholder="自分の言葉で答える..."
                 rows={2}
                 disabled={loading}
