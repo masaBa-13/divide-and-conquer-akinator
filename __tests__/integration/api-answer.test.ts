@@ -63,7 +63,7 @@ const BASE_REQUEST = {
   challenge: "チームの生産性が落ちている",
   history: SAMPLE_HISTORY,
   answer: "はい、プロセスの問題です",
-  selectedFramework: "5Why",
+  selectedFrameworks: ["5Why"],
 }
 
 describe("POST /api/answer", () => {
@@ -122,8 +122,8 @@ describe("POST /api/answer", () => {
     expect(res.status).toBe(400)
   })
 
-  it("バリデーション失敗: 不正なselectedFramework → 400が返ること", async () => {
-    const req = makeRequest({ ...BASE_REQUEST, selectedFramework: "不明なフレームワーク" })
+  it("バリデーション失敗: 不正なselectedFrameworks → 400が返ること", async () => {
+    const req = makeRequest({ ...BASE_REQUEST, selectedFrameworks: ["不明なフレームワーク"] })
     const res = await POST(req)
 
     expect(res.status).toBe(400)

@@ -9,35 +9,46 @@ import type { ConversationEntry } from "@/lib/types"
 const RESULT_RESPONSE_SCHEMA = {
   type: "object",
   properties: {
-    actions: {
+    analyses: {
       type: "array",
+      minItems: 1,
+      maxItems: 2,
       items: {
         type: "object",
         properties: {
-          id: { type: "number" },
-          title: { type: "string" },
-          description: { type: "string" },
-          priority: { type: "string", enum: ["high", "medium", "low"] },
-          estimatedTime: { type: "string" },
+          framework: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              description: { type: "string" },
+              reason: { type: "string" },
+              steps: { type: "array", items: { type: "string" } },
+            },
+            required: ["name", "description", "reason", "steps"],
+          },
+          actions: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                id: { type: "number" },
+                title: { type: "string" },
+                description: { type: "string" },
+                priority: { type: "string", enum: ["high", "medium", "low"] },
+                estimatedTime: { type: "string" },
+              },
+              required: ["id", "title", "description", "priority"],
+            },
+          },
+          visualization: {
+            type: "object",
+          },
         },
-        required: ["id", "title", "description", "priority"],
+        required: ["framework", "actions"],
       },
-    },
-    framework: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        description: { type: "string" },
-        reason: { type: "string" },
-        steps: { type: "array", items: { type: "string" } },
-      },
-      required: ["name", "description", "reason", "steps"],
-    },
-    visualization: {
-      type: "object",
     },
   },
-  required: ["actions", "framework"],
+  required: ["analyses"],
 } as const
 
 export async function POST(request: NextRequest): Promise<Response> {
@@ -53,7 +64,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     return new Response(JSON.stringify({ error: parsed.error.format() }), { status: 400 })
   }
 
-  const { challenge, history, selectedFramework } = parsed.data
+  const { challenge, history, selectedFrameworks } = parsed.data
 
   const contents: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }> = [
     { role: "user", parts: [{ text: challenge }] },
@@ -81,7 +92,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 
       const raw = await callGeminiStreaming(
         {
-          systemInstruction: RESULT_SYSTEM_PROMPT(selectedFramework),
+          systemInstruction: RESULT_SYSTEM_PROMPT(selectedFrameworks),
           contents,
           responseSchema: RESULT_RESPONSE_SCHEMA,
         },

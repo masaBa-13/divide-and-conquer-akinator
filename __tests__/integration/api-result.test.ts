@@ -72,37 +72,41 @@ const SAMPLE_HISTORY: ConversationEntry[] = [
 const BASE_REQUEST = {
   challenge: "チームの生産性が落ちている",
   history: SAMPLE_HISTORY,
-  selectedFramework: "5Why",
+  selectedFrameworks: ["5Why"],
 }
 
 const VALID_GEMINI_RESPONSE = {
-  actions: [
+  analyses: [
     {
-      id: 1,
-      title: "原因の特定",
-      description: "生産性低下の根本原因を特定するためのミーティングを実施する",
-      priority: "high",
-      estimatedTime: "2時間",
-    },
-    {
-      id: 2,
-      title: "ワークフローの見直し",
-      description: "現在の業務フローを可視化し、ボトルネックを見つける",
-      priority: "medium",
-      estimatedTime: "1日",
+      framework: {
+        name: "5Why",
+        description: "なぜなぜ分析で問題の根本原因を追求する手法",
+        reason: "業務プロセスの問題には根本原因の特定が重要なため",
+        steps: [
+          "問題を明確に定義する",
+          "なぜ？を5回繰り返す",
+          "根本原因を特定する",
+          "対策を立案する",
+        ],
+      },
+      actions: [
+        {
+          id: 1,
+          title: "原因の特定",
+          description: "生産性低下の根本原因を特定するためのミーティングを実施する",
+          priority: "high",
+          estimatedTime: "2時間",
+        },
+        {
+          id: 2,
+          title: "ワークフローの見直し",
+          description: "現在の業務フローを可視化し、ボトルネックを見つける",
+          priority: "medium",
+          estimatedTime: "1日",
+        },
+      ],
     },
   ],
-  framework: {
-    name: "5Why",
-    description: "なぜなぜ分析で問題の根本原因を追求する手法",
-    reason: "業務プロセスの問題には根本原因の特定が重要なため",
-    steps: [
-      "問題を明確に定義する",
-      "なぜ？を5回繰り返す",
-      "根本原因を特定する",
-      "対策を立案する",
-    ],
-  },
 }
 
 describe("POST /api/result", () => {
@@ -123,11 +127,12 @@ describe("POST /api/result", () => {
     expect(res.status).toBe(200)
     expect(res.headers.get("Content-Type")).toBe("text/event-stream")
     const data = await parseSseResult(res) as typeof VALID_GEMINI_RESPONSE
-    expect(data.actions).toHaveLength(2)
-    expect(data.actions[0].id).toBe(1)
-    expect(data.actions[0].priority).toBe("high")
-    expect(data.framework.name).toBe("5Why")
-    expect(data.framework.steps).toHaveLength(4)
+    expect(data.analyses).toHaveLength(1)
+    expect(data.analyses[0].actions).toHaveLength(2)
+    expect(data.analyses[0].actions[0].id).toBe(1)
+    expect(data.analyses[0].actions[0].priority).toBe("high")
+    expect(data.analyses[0].framework.name).toBe("5Why")
+    expect(data.analyses[0].framework.steps).toHaveLength(4)
   })
 
   it("Gemini不正JSON → errorイベントが返ること", async () => {
@@ -159,17 +164,17 @@ describe("POST /api/result", () => {
     expect(res.status).toBe(400)
   })
 
-  it("バリデーション失敗: 不正なselectedFramework → 400が返ること", async () => {
-    const req = makeRequest({ ...BASE_REQUEST, selectedFramework: "不明なフレームワーク" })
+  it("バリデーション失敗: 不正なselectedFrameworks → 400が返ること", async () => {
+    const req = makeRequest({ ...BASE_REQUEST, selectedFrameworks: ["不明なフレームワーク"] })
     const res = await POST(req)
 
     expect(res.status).toBe(400)
   })
 
-  it("selectedFrameworkがGeminiプロンプトに渡されること", async () => {
+  it("selectedFrameworksがGeminiプロンプトに渡されること", async () => {
     mockCallGeminiStreaming.mockResolvedValueOnce(VALID_GEMINI_RESPONSE)
 
-    const req = makeRequest({ ...BASE_REQUEST, selectedFramework: "PDCAサイクル" })
+    const req = makeRequest({ ...BASE_REQUEST, selectedFrameworks: ["PDCAサイクル"] })
     const res = await POST(req)
     await parseSseResult(res)
 

@@ -17,14 +17,14 @@ export interface StartResponse {
   question: string
   answerType: AnswerType
   choices?: string[]
-  frameworkCandidate: FrameworkName
+  frameworkCandidates: FrameworkName[]
 }
 
 export interface AnswerRequest {
   challenge: string
   history: ConversationEntry[]
   answer: string
-  selectedFramework: FrameworkName
+  selectedFrameworks: FrameworkName[]
 }
 export interface AnswerResponse {
   done: boolean
@@ -36,7 +36,7 @@ export interface AnswerResponse {
 export interface ResultRequest {
   challenge: string
   history: ConversationEntry[]
-  selectedFramework: FrameworkName
+  selectedFrameworks: FrameworkName[]
 }
 export interface Action {
   id: number
@@ -63,8 +63,12 @@ export type VisualizationData =
   | { type: "cycle"; phases: { name: string; items: string[] }[] }
   | { type: "job_theory"; job: string; gains: string[]; pains: string[] }
 
-export interface ResultResponse {
-  actions: Action[]
+export interface FrameworkAnalysis {
   framework: FrameworkInfo
+  actions: Action[]
   visualization?: VisualizationData
+}
+
+export interface ResultResponse {
+  analyses: FrameworkAnalysis[]
 }

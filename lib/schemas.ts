@@ -27,14 +27,14 @@ export const StartResponseSchema = z.object({
   question: z.string(),
   answerType: AnswerTypeSchema,
   choices: z.array(z.string()).optional(),
-  frameworkCandidate: FrameworkNameSchema,
+  frameworkCandidates: z.array(FrameworkNameSchema).min(1).max(2),
 })
 
 export const AnswerRequestSchema = z.object({
   challenge: z.string().min(1),
   history: z.array(ConversationEntrySchema),
   answer: z.string().min(1),
-  selectedFramework: FrameworkNameSchema,
+  selectedFrameworks: z.array(FrameworkNameSchema).min(1).max(2),
 })
 
 export const AnswerResponseSchema = z.object({
@@ -47,7 +47,7 @@ export const AnswerResponseSchema = z.object({
 export const ResultRequestSchema = z.object({
   challenge: z.string().min(1),
   history: z.array(ConversationEntrySchema),
-  selectedFramework: FrameworkNameSchema,
+  selectedFrameworks: z.array(FrameworkNameSchema).min(1).max(2),
 })
 
 const ActionSchema = z.object({
@@ -94,10 +94,14 @@ const VisualizationDataSchema = z.discriminatedUnion("type", [
   }),
 ])
 
-export const ResultResponseSchema = z.object({
-  actions: z.array(ActionSchema),
+const FrameworkAnalysisSchema = z.object({
   framework: FrameworkInfoSchema,
+  actions: z.array(ActionSchema),
   visualization: VisualizationDataSchema.optional(),
+})
+
+export const ResultResponseSchema = z.object({
+  analyses: z.array(FrameworkAnalysisSchema).min(1).max(2),
 })
 
 export const GeminiResponseSchema = z.object({

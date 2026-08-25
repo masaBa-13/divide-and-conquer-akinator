@@ -55,7 +55,7 @@ export function QuestionPanel() {
     currentQuestion,
     currentAnswerType,
     currentChoices,
-    selectedFramework,
+    selectedFrameworks,
     history,
     addQA,
     setNextQuestion,
@@ -69,7 +69,7 @@ export function QuestionPanel() {
   const [bubbleComplete, setBubbleComplete] = useState(false)
 
   const handleAnswer = useCallback(async (answer: string) => {
-    if (!currentQuestion || !selectedFramework || loading) return
+    if (!currentQuestion || selectedFrameworks.length === 0 || loading) return
 
     setApiError(null)
     setLoading(true)
@@ -90,7 +90,7 @@ export function QuestionPanel() {
           challenge,
           history: newHistory,
           answer,
-          selectedFramework,
+          selectedFrameworks,
         }),
       })
 
@@ -111,7 +111,7 @@ export function QuestionPanel() {
           body: JSON.stringify({
             challenge,
             history: newHistory,
-            selectedFramework,
+            selectedFrameworks,
           }),
         })
 
@@ -136,7 +136,7 @@ export function QuestionPanel() {
     } finally {
       setLoading(false)
     }
-  }, [currentQuestion, currentAnswerType, currentChoices, selectedFramework, challenge, history, loading, addQA, setNextQuestion, setResult, setError, router])
+  }, [currentQuestion, currentAnswerType, currentChoices, selectedFrameworks, challenge, history, loading, addQA, setNextQuestion, setResult, setError, router])
 
   const handleGoBack = useCallback(() => {
     // This is handled by zustand — just navigate back doesn't undo,

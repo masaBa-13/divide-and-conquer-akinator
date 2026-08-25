@@ -9,7 +9,7 @@ import type { StartResponse } from "@/lib/types"
 const FALLBACK: StartResponse = {
   question: "その課題は技術的な問題ですか？",
   answerType: "yes_no",
-  frameworkCandidate: "ロジックツリー",
+  frameworkCandidates: ["ロジックツリー"],
 }
 
 const START_RESPONSE_SCHEMA = {
@@ -18,12 +18,17 @@ const START_RESPONSE_SCHEMA = {
     question: { type: "string" },
     answerType: { type: "string", enum: ["yes_no", "choices"] },
     choices: { type: "array", items: { type: "string" } },
-    frameworkCandidate: {
-      type: "string",
-      enum: ["5Why", "ロジックツリー", "How Tree", "OODAループ", "PDCAサイクル", "ジョブ理論"],
+    frameworkCandidates: {
+      type: "array",
+      items: {
+        type: "string",
+        enum: ["5Why", "ロジックツリー", "How Tree", "OODAループ", "PDCAサイクル", "ジョブ理論"],
+      },
+      minItems: 1,
+      maxItems: 2,
     },
   },
-  required: ["question", "answerType", "frameworkCandidate"],
+  required: ["question", "answerType", "frameworkCandidates"],
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {

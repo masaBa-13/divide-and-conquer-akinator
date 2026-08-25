@@ -18,7 +18,7 @@ interface SessionState {
   currentQuestion: string | null
   currentAnswerType: AnswerType
   currentChoices: string[]
-  selectedFramework: FrameworkName | null
+  selectedFrameworks: FrameworkName[]
   result: ResultResponse | null
   phase: Phase
   questionCount: number
@@ -44,7 +44,7 @@ const initialState = {
   currentQuestion: null,
   currentAnswerType: "yes_no" as AnswerType,
   currentChoices: [] as string[],
-  selectedFramework: null,
+  selectedFrameworks: [] as FrameworkName[],
   result: null,
   phase: "start" as Phase,
   questionCount: 0,
@@ -63,7 +63,7 @@ export const useSessionStore = create<SessionState>()(
           currentQuestion: response.question,
           currentAnswerType: response.answerType,
           currentChoices: response.choices ?? [],
-          selectedFramework: response.frameworkCandidate,
+          selectedFrameworks: response.frameworkCandidates,
           phase: "questioning",
           questionCount: 1,
         }),

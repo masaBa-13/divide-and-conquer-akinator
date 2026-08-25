@@ -6,7 +6,7 @@ import type { FrameworkMetadata } from '@/lib/frameworks'
 import type { FrameworkName } from '@/lib/types'
 
 interface Props {
-  usedFramework: FrameworkName
+  usedFrameworks: FrameworkName[]
 }
 
 function FrameworkAccordionItem({ fw }: { fw: FrameworkMetadata }) {
@@ -62,8 +62,8 @@ function FrameworkAccordionItem({ fw }: { fw: FrameworkMetadata }) {
   )
 }
 
-export function OtherFrameworks({ usedFramework }: Props) {
-  const others = FRAMEWORKS.filter((fw) => fw.name !== usedFramework)
+export function OtherFrameworks({ usedFrameworks }: Props) {
+  const others = FRAMEWORKS.filter((fw) => !usedFrameworks.includes(fw.name))
 
   return (
     <div className="flex flex-col gap-3">

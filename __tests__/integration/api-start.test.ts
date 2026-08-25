@@ -40,7 +40,7 @@ function makeRequest(body: unknown): NextRequest {
 const VALID_GEMINI_RESPONSE = {
   question: "その課題は業務プロセスに関するものですか？",
   answerType: "yes_no",
-  frameworkCandidate: "5Why",
+  frameworkCandidates: ["5Why"],
 }
 
 describe("POST /api/start", () => {
@@ -63,7 +63,7 @@ describe("POST /api/start", () => {
     const data = await res.json() as typeof VALID_GEMINI_RESPONSE
     expect(data.question).toBe(VALID_GEMINI_RESPONSE.question)
     expect(data.answerType).toBe("yes_no")
-    expect(data.frameworkCandidate).toBe("5Why")
+    expect((data as { frameworkCandidates: string[] }).frameworkCandidates).toContain("5Why")
   })
 
   it("異常: 空文字列 → 400が返ること", async () => {
@@ -87,10 +87,10 @@ describe("POST /api/start", () => {
     const res = await POST(req)
 
     expect(res.status).toBe(200)
-    const data = await res.json() as { question: string; answerType: string; frameworkCandidate: string }
+    const data = await res.json() as { question: string; answerType: string; frameworkCandidates: string[] }
     expect(data.question).toBe("その課題は技術的な問題ですか？")
     expect(data.answerType).toBe("yes_no")
-    expect(data.frameworkCandidate).toBe("ロジックツリー")
+    expect(data.frameworkCandidates).toContain("ロジックツリー")
   })
 
   it("異常: Gemini 500エラー → 500が返ること", async () => {
@@ -107,7 +107,7 @@ describe("POST /api/start", () => {
       question: "課題の種類を選んでください",
       answerType: "choices",
       choices: ["技術的な問題", "人間関係の問題", "プロセスの問題"],
-      frameworkCandidate: "ロジックツリー",
+      frameworkCandidates: ["ロジックツリー"],
     }
     mockCallGemini.mockResolvedValueOnce(choicesResponse)
 
