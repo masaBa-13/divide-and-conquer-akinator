@@ -3,8 +3,23 @@ export const runtime = "edge"
 import { NextRequest } from "next/server"
 import { callGeminiStreaming } from "@/lib/vertex-ai"
 import { RESULT_SYSTEM_PROMPT } from "@/lib/prompts"
-import { ResultRequestSchema, ResultResponseSchema } from "@/lib/schemas"
+import { ResultRequestSchema, ResultResponseSchema, VisualizationDataSchema } from "@/lib/schemas"
 import type { ConversationEntry } from "@/lib/types"
+
+function sanitizeAnalyses(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object" || !("analyses" in raw)) return raw
+  const r = raw as { analyses: unknown[] }
+  if (!Array.isArray(r.analyses)) return raw
+  return {
+    ...r,
+    analyses: r.analyses.map((a) => {
+      if (!a || typeof a !== "object") return a
+      const analysis = a as Record<string, unknown>
+      const vizResult = VisualizationDataSchema.safeParse(analysis.visualization)
+      return { ...analysis, visualization: vizResult.success ? vizResult.data : undefined }
+    }),
+  }
+}
 
 const RESULT_RESPONSE_SCHEMA = {
   type: "object",
@@ -99,7 +114,7 @@ export async function POST(request: NextRequest): Promise<Response> {
         async () => { await send("ping", {}) }
       )
 
-      const validated = ResultResponseSchema.safeParse(raw)
+      const validated = ResultResponseSchema.safeParse(sanitizeAnalyses(raw))
       if (!validated.success) {
         await send("error", { message: "Invalid response from AI" })
         return

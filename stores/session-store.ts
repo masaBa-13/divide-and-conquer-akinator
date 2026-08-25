@@ -66,6 +66,9 @@ export const useSessionStore = create<SessionState>()(
           selectedFrameworks: response.frameworkCandidates,
           phase: "questioning",
           questionCount: 1,
+          history: [],
+          result: null,
+          error: null,
         }),
 
       addQA: (

@@ -73,7 +73,7 @@ const VisualizationNodeSchema: z.ZodType<import("./types").VisualizationNode> = 
   })
 )
 
-const VisualizationDataSchema = z.discriminatedUnion("type", [
+export const VisualizationDataSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("tree"),
     root: VisualizationNodeSchema,
