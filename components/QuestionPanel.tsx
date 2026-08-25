@@ -76,9 +76,6 @@ export function QuestionPanel() {
     setCharacterState('thinking')
     setBubbleComplete(false)
 
-    // Record this Q&A
-    addQA(currentQuestion, currentAnswerType, currentChoices, answer)
-
     const newHistory = [
       ...history,
       { role: 'assistant' as const, question: currentQuestion, answerType: currentAnswerType, choices: currentChoices },
@@ -102,6 +99,7 @@ export function QuestionPanel() {
       }
 
       const answerData = await readSseResult<AnswerResponse>(res.body)
+      addQA(currentQuestion, currentAnswerType, currentChoices, answer)
       setNextQuestion(answerData)
 
       if (answerData.done) {
