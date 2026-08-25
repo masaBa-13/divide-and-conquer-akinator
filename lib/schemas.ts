@@ -1,0 +1,94 @@
+import { z } from "zod"
+
+const AnswerTypeSchema = z.enum(["yes_no", "choices"])
+const PrioritySchema = z.enum(["high", "medium", "low"])
+const FrameworkNameSchema = z.enum([
+  "5Why",
+  "ロジックツリー",
+  "How Tree",
+  "OODAループ",
+  "PDCAサイクル",
+  "ジョブ理論",
+])
+
+const ConversationEntrySchema = z.object({
+  role: z.enum(["assistant", "user"]),
+  question: z.string().optional(),
+  answerType: AnswerTypeSchema.optional(),
+  choices: z.array(z.string()).optional(),
+  answer: z.string().optional(),
+})
+
+export const StartRequestSchema = z.object({
+  challenge: z.string().min(1),
+})
+
+export const StartResponseSchema = z.object({
+  question: z.string(),
+  answerType: AnswerTypeSchema,
+  choices: z.array(z.string()).optional(),
+  frameworkCandidate: FrameworkNameSchema,
+})
+
+export const AnswerRequestSchema = z.object({
+  challenge: z.string().min(1),
+  history: z.array(ConversationEntrySchema),
+  answer: z.string().min(1),
+  selectedFramework: FrameworkNameSchema,
+})
+
+export const AnswerResponseSchema = z.object({
+  done: z.boolean(),
+  question: z.string().optional(),
+  answerType: AnswerTypeSchema.optional(),
+  choices: z.array(z.string()).optional(),
+})
+
+export const ResultRequestSchema = z.object({
+  challenge: z.string().min(1),
+  history: z.array(ConversationEntrySchema),
+  selectedFramework: FrameworkNameSchema,
+})
+
+const ActionSchema = z.object({
+  id: z.number(),
+  title: z.string(),
+  description: z.string(),
+  priority: PrioritySchema,
+  estimatedTime: z.string().optional(),
+})
+
+const FrameworkInfoSchema = z.object({
+  name: FrameworkNameSchema,
+  description: z.string(),
+  reason: z.string(),
+  steps: z.array(z.string()),
+})
+
+export const ResultResponseSchema = z.object({
+  actions: z.array(ActionSchema),
+  framework: FrameworkInfoSchema,
+})
+
+export const GeminiResponseSchema = z.object({
+  candidates: z.array(
+    z.object({
+      content: z.object({
+        parts: z.array(
+          z.object({
+            text: z.string(),
+          })
+        ),
+        role: z.string().optional(),
+      }),
+      finishReason: z.string().optional(),
+    })
+  ),
+  usageMetadata: z
+    .object({
+      promptTokenCount: z.number().optional(),
+      candidatesTokenCount: z.number().optional(),
+      totalTokenCount: z.number().optional(),
+    })
+    .optional(),
+})
