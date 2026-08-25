@@ -75,6 +75,48 @@ export function buildResultSystemPrompt(framework: FrameworkName): string {
 - 優先度はhigh（重要・緊急）、medium（重要・非緊急）、low（参考程度）で設定
 - 推定時間は「30分」「1時間」「1週間」などの形式で記載
 
+## フレームワーク別 visualization フォーマット
+
+【5Why の場合】
+"visualization": {
+  "type": "why_chain",
+  "steps": ["なぜ1（表面的原因）", "なぜ2", "なぜ3", "なぜ4", "なぜ5（根本原因）"]
+}
+
+【ロジックツリー / How Tree の場合】
+"visualization": {
+  "type": "tree",
+  "root": {
+    "id": "root",
+    "label": "課題or目標",
+    "children": [
+      { "id": "1", "label": "カテゴリA", "children": [
+        { "id": "1-1", "label": "具体的アクション" }
+      ]},
+      ...
+    ]
+  }
+}
+
+【OODAループ / PDCAサイクル の場合】
+"visualization": {
+  "type": "cycle",
+  "phases": [
+    { "name": "観察（Observe）", "items": ["..."] },
+    { "name": "状況判断（Orient）", "items": ["..."] },
+    { "name": "意思決定（Decide）", "items": ["..."] },
+    { "name": "行動（Act）", "items": ["..."] }
+  ]
+}
+
+【ジョブ理論 の場合】
+"visualization": {
+  "type": "job_theory",
+  "job": "達成したいこと（コアジョブ）",
+  "gains": ["得たいこと1", "得たいこと2"],
+  "pains": ["避けたいこと1", "避けたいこと2"]
+}
+
 ## 出力形式（JSON）
 {
   "actions": [
@@ -91,7 +133,8 @@ export function buildResultSystemPrompt(framework: FrameworkName): string {
     "description": "フレームワークの概要説明",
     "reason": "このフレームワークを選んだ理由",
     "steps": ["ステップ1", "ステップ2", ...]
-  }
+  },
+  "visualization": { ... }  // 上記フレームワーク別フォーマットに従う
 }`
 }
 

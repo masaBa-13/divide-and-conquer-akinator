@@ -33,9 +33,12 @@ const RESULT_RESPONSE_SCHEMA = {
       },
       required: ["name", "description", "reason", "steps"],
     },
+    visualization: {
+      type: "object",
+    },
   },
   required: ["actions", "framework"],
-}
+} as const
 
 export async function POST(request: NextRequest): Promise<Response> {
   let body: unknown

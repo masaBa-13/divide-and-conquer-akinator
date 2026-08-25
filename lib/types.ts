@@ -51,7 +51,20 @@ export interface FrameworkInfo {
   reason: string
   steps: string[]
 }
+export interface VisualizationNode {
+  id: string
+  label: string
+  children?: VisualizationNode[]
+}
+
+export type VisualizationData =
+  | { type: "tree"; root: VisualizationNode }
+  | { type: "why_chain"; steps: string[] }
+  | { type: "cycle"; phases: { name: string; items: string[] }[] }
+  | { type: "job_theory"; job: string; gains: string[]; pains: string[] }
+
 export interface ResultResponse {
   actions: Action[]
   framework: FrameworkInfo
+  visualization?: VisualizationData
 }

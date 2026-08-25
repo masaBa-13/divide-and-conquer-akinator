@@ -65,9 +65,39 @@ const FrameworkInfoSchema = z.object({
   steps: z.array(z.string()),
 })
 
+const VisualizationNodeSchema: z.ZodType<import("./types").VisualizationNode> = z.lazy(() =>
+  z.object({
+    id: z.string(),
+    label: z.string(),
+    children: z.array(VisualizationNodeSchema).optional(),
+  })
+)
+
+const VisualizationDataSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("tree"),
+    root: VisualizationNodeSchema,
+  }),
+  z.object({
+    type: z.literal("why_chain"),
+    steps: z.array(z.string()),
+  }),
+  z.object({
+    type: z.literal("cycle"),
+    phases: z.array(z.object({ name: z.string(), items: z.array(z.string()) })),
+  }),
+  z.object({
+    type: z.literal("job_theory"),
+    job: z.string(),
+    gains: z.array(z.string()),
+    pains: z.array(z.string()),
+  }),
+])
+
 export const ResultResponseSchema = z.object({
   actions: z.array(ActionSchema),
   framework: FrameworkInfoSchema,
+  visualization: VisualizationDataSchema.optional(),
 })
 
 export const GeminiResponseSchema = z.object({
