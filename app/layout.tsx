@@ -4,7 +4,18 @@ import { StoreHydrator } from '@/components/StoreHydrator'
 
 export const metadata: Metadata = {
   title: '課題分解アキネーター',
-  description: '課題をアキネーターが1問1答で分解します',
+  description: '悩みを1問1答で深掘りして、小さなアクションに分解します。ISARIBI with の学生メンバー向けツール。',
+  openGraph: {
+    title: '課題分解アキネーター',
+    description: '悩みを1問1答で深掘りして、小さなアクションに分解します。',
+    type: 'website',
+    locale: 'ja_JP',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '課題分解アキネーター',
+    description: '悩みを1問1答で深掘りして、小さなアクションに分解します。',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
