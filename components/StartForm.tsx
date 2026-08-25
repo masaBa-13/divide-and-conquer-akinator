@@ -97,7 +97,7 @@ export function StartForm() {
         disabled={loading || input.trim().length === 0}
         className="w-full"
       >
-        {loading ? '分析中...' : '占いを始める'}
+        {loading ? '分析中...' : '悩みを相談する'}
       </Button>
     </form>
   )

@@ -265,14 +265,25 @@ export function QuestionPanel() {
       )}
 
       {loading && (
-        <div className="flex items-center gap-2 text-[#5a3a1a]">
-          <span className="animate-spin text-xl">⟳</span>
+        <div className="flex items-center text-[#5a3a1a]">
+          <style>{`
+            @keyframes dot-blink {
+              0%, 80%, 100% { opacity: 0; }
+              40% { opacity: 1; }
+            }
+            .dot-1 { animation: dot-blink 1.2s infinite 0s; }
+            .dot-2 { animation: dot-blink 1.2s infinite 0.2s; }
+            .dot-3 { animation: dot-blink 1.2s infinite 0.4s; }
+          `}</style>
           <span
             className="font-medium"
             style={{ fontFamily: "'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif" }}
           >
-            考え中...
+            考え中
           </span>
+          <span className="dot-1 font-bold text-lg ml-0.5">.</span>
+          <span className="dot-2 font-bold text-lg">.</span>
+          <span className="dot-3 font-bold text-lg">.</span>
         </div>
       )}
 
