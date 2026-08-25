@@ -6,6 +6,7 @@ export interface FrameworkMetadata {
   whenToUse: string
   steps: string[]
   icon: string
+  learnMoreUrl: string
 }
 
 export const FRAMEWORKS: FrameworkMetadata[] = [
@@ -23,6 +24,7 @@ export const FRAMEWORKS: FrameworkMetadata[] = [
       "根本原因に対してアクションプランを立てる",
     ],
     icon: "🔍",
+    learnMoreUrl: "https://ja.wikipedia.org/wiki/%E3%81%AA%E3%81%9C%E3%81%AA%E3%81%9C%E5%88%86%E6%9E%90",
   },
   {
     name: "ロジックツリー",
@@ -38,6 +40,7 @@ export const FRAMEWORKS: FrameworkMetadata[] = [
       "特定した枝に対してアクションプランを立てる",
     ],
     icon: "🌳",
+    learnMoreUrl: "https://ja.wikipedia.org/wiki/%E3%83%AD%E3%82%B8%E3%83%83%E3%82%AF%E3%83%84%E3%83%AA%E3%83%BC",
   },
   {
     name: "How Tree",
@@ -53,6 +56,7 @@ export const FRAMEWORKS: FrameworkMetadata[] = [
       "優先度・実現可能性でアクションを絞り込む",
     ],
     icon: "🎯",
+    learnMoreUrl: "https://ja.wikipedia.org/wiki/%E3%83%AD%E3%82%B8%E3%83%83%E3%82%AF%E3%83%84%E3%83%AA%E3%83%BC",
   },
   {
     name: "OODAループ",
@@ -68,6 +72,7 @@ export const FRAMEWORKS: FrameworkMetadata[] = [
       "ループを繰り返し、継続的に改善する",
     ],
     icon: "🔄",
+    learnMoreUrl: "https://ja.wikipedia.org/wiki/OODA%E3%83%AB%E3%83%BC%E3%83%97",
   },
   {
     name: "PDCAサイクル",
@@ -83,6 +88,7 @@ export const FRAMEWORKS: FrameworkMetadata[] = [
       "次のサイクルへPlanに戻る",
     ],
     icon: "♻️",
+    learnMoreUrl: "https://ja.wikipedia.org/wiki/PDCA%E3%82%B5%E3%82%A4%E3%82%AF%E3%83%AB",
   },
   {
     name: "ジョブ理論",
@@ -98,6 +104,7 @@ export const FRAMEWORKS: FrameworkMetadata[] = [
       "最も重要なジョブにフォーカスしてアクションプランを立てる",
     ],
     icon: "💼",
+    learnMoreUrl: "https://ja.wikipedia.org/wiki/%E3%82%B8%E3%83%A7%E3%83%96%E7%90%86%E8%AB%96",
   },
 ]
 

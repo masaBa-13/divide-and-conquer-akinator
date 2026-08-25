@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { FRAMEWORKS } from '@/lib/frameworks'
+import { FrameworkDiagram } from '@/components/FrameworkDiagram'
 import type { FrameworkMetadata } from '@/lib/frameworks'
 import type { FrameworkName } from '@/lib/types'
 
@@ -29,10 +30,15 @@ function FrameworkAccordionItem({ fw }: { fw: FrameworkMetadata }) {
 
       {open && (
         <div
-          className="px-5 pb-5 flex flex-col gap-3 text-gray-700"
+          className="px-5 pb-5 flex flex-col gap-4 text-gray-700"
           style={{ fontFamily: "'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif" }}
         >
           <p className="text-sm leading-relaxed">{fw.description}</p>
+
+          {/* 図解 */}
+          <div className="flex justify-center bg-white rounded-lg p-3 border border-amber-100">
+            <FrameworkDiagram name={fw.name} />
+          </div>
 
           <div>
             <h4 className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-1">
@@ -56,6 +62,18 @@ function FrameworkAccordionItem({ fw }: { fw: FrameworkMetadata }) {
               ))}
             </ul>
           </div>
+
+          {/* 詳しく学ぶリンク */}
+          <a
+            href={fw.learnMoreUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 hover:underline self-start"
+          >
+            <span>📖</span>
+            <span>詳しく学ぶ（Wikipedia）</span>
+            <span className="text-xs opacity-60">↗</span>
+          </a>
         </div>
       )}
     </div>
