@@ -71,7 +71,7 @@ function FrameworkAccordionItem({ fw }: { fw: FrameworkMetadata }) {
             className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 hover:underline self-start"
           >
             <span>📖</span>
-            <span>詳しく学ぶ（Wikipedia）</span>
+            <span>詳しく学ぶ</span>
             <span className="text-xs opacity-60">↗</span>
           </a>
         </div>
