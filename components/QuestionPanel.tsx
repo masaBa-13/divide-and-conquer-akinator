@@ -67,6 +67,7 @@ export function QuestionPanel() {
   const [apiError, setApiError] = useState<string | null>(null)
   const [characterState, setCharacterState] = useState<'idle' | 'thinking' | 'eureka'>('idle')
   const [bubbleComplete, setBubbleComplete] = useState(false)
+  const [freeText, setFreeText] = useState('')
 
   const handleAnswer = useCallback(async (answer: string) => {
     if (!currentQuestion || selectedFrameworks.length === 0 || loading) return
@@ -75,6 +76,7 @@ export function QuestionPanel() {
     setLoading(true)
     setCharacterState('thinking')
     setBubbleComplete(false)
+    setFreeText('')
 
     const newHistory = [
       ...history,
@@ -217,6 +219,41 @@ export function QuestionPanel() {
               ))}
             </div>
           )}
+
+          {/* 自由記述欄 */}
+          <div className="flex flex-col gap-2 mt-1">
+            <p
+              className="text-xs text-[#8a6030] opacity-70"
+              style={{ fontFamily: "'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif" }}
+            >
+              または自由に入力
+            </p>
+            <div className="flex gap-2">
+              <textarea
+                value={freeText}
+                onChange={(e) => setFreeText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey && freeText.trim()) {
+                    e.preventDefault()
+                    handleAnswer(freeText.trim())
+                  }
+                }}
+                placeholder="自分の言葉で答える..."
+                rows={2}
+                disabled={loading}
+                className="flex-1 px-4 py-2 rounded-xl border border-amber-300 bg-[#fffef0] text-sm text-[#5a3a1a] placeholder-[#c4a06a] resize-none focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:opacity-50"
+                style={{ fontFamily: "'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif" }}
+              />
+              <button
+                onClick={() => freeText.trim() && handleAnswer(freeText.trim())}
+                disabled={loading || !freeText.trim()}
+                className="px-4 rounded-xl bg-[#c4893a] hover:bg-[#a6722e] text-white font-bold text-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed self-stretch"
+                aria-label="送信"
+              >
+                →
+              </button>
+            </div>
+          </div>
 
           {canGoBack && (
             <div className="flex justify-center mt-2">
