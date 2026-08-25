@@ -6,5 +6,8 @@
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
+  },
+  "vars": {
+    "SITE_URL": "https://akinator.miraidai.workers.dev"
   }
 }
