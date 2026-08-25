@@ -1,101 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
-import { generateJWT, getAccessToken, callGemini } from "@/lib/vertex-ai"
+import { callGemini } from "@/lib/vertex-ai"
 
-const FAKE_SERVICE_ACCOUNT = JSON.stringify({
-  client_email: "test@test-project.iam.gserviceaccount.com",
-  private_key: "-----BEGIN PRIVATE KEY-----\nFAKE\n-----END PRIVATE KEY-----",
-})
-
-const mockJwtGenerator = vi.fn().mockResolvedValue("mocked.jwt.token")
-
-describe("generateJWT", () => {
-  it("不正な秘密鍵では crypto.subtle がエラーを投げる（仕様確認）", async () => {
-    await expect(generateJWT(FAKE_SERVICE_ACCOUNT)).rejects.toThrow()
-  })
-
-  it("JWTフォーマットは3セグメントであることをモックで確認", () => {
-    // モックが返すJWTは header.payload.signature の3セグメント
-    const mockJwt = "header.payload.signature"
-    const parts = mockJwt.split(".")
-    expect(parts).toHaveLength(3)
-  })
-})
-
-describe("getAccessToken", () => {
-  const originalFetch = global.fetch
-
-  beforeEach(() => {
-    mockJwtGenerator.mockClear()
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ access_token: "fake-access-token" }),
-      })
-    )
-  })
-
-  afterEach(() => {
-    vi.stubGlobal("fetch", originalFetch)
-  })
-
-  it("正しいURLとbodyでAPIを呼び出す", async () => {
-    const token = await getAccessToken(FAKE_SERVICE_ACCOUNT, mockJwtGenerator)
-
-    const mockFetch = vi.mocked(global.fetch)
-    expect(mockFetch).toHaveBeenCalledTimes(1)
-
-    const [url, options] = mockFetch.mock.calls[0] as [string, RequestInit]
-    expect(url).toBe("https://oauth2.googleapis.com/token")
-    expect(options.method).toBe("POST")
-
-    const body = options.body as URLSearchParams
-    expect(body.get("grant_type")).toBe(
-      "urn:ietf:params:oauth:grant-type:jwt-bearer"
-    )
-    expect(body.get("assertion")).toBe("mocked.jwt.token")
-
-    expect(token).toBe("fake-access-token")
-  })
-
-  it("generateJWTが呼び出される", async () => {
-    await getAccessToken(FAKE_SERVICE_ACCOUNT, mockJwtGenerator)
-    expect(mockJwtGenerator).toHaveBeenCalledWith(FAKE_SERVICE_ACCOUNT)
-  })
-
-  it("401エラー時に適切な例外を投げる", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 401,
-        text: async () => "Unauthorized",
-      })
-    )
-
-    await expect(
-      getAccessToken(FAKE_SERVICE_ACCOUNT, mockJwtGenerator)
-    ).rejects.toThrow("401")
-  })
-})
+vi.mock("@/lib/env", () => ({
+  getEnv: vi.fn(() => ({
+    GEMINI_API_KEY: "test-api-key",
+  })),
+}))
 
 describe("callGemini", () => {
   const originalFetch = global.fetch
-  const originalEnv = process.env
-
-  const mockTokenGetter = vi.fn().mockResolvedValue("fake-access-token")
 
   beforeEach(() => {
-    process.env = {
-      ...originalEnv,
-      VERTEX_AI_PROJECT_ID: "test-project",
-      VERTEX_AI_LOCATION: "asia-northeast1",
-      VERTEX_AI_SERVICE_ACCOUNT: FAKE_SERVICE_ACCOUNT,
-    }
-
-    mockTokenGetter.mockClear()
-    mockTokenGetter.mockResolvedValue("fake-access-token")
-
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -116,32 +31,27 @@ describe("callGemini", () => {
   })
 
   afterEach(() => {
-    process.env = originalEnv
     vi.stubGlobal("fetch", originalFetch)
+    vi.clearAllMocks()
   })
 
-  it("正しいheaderとbodyでGemini APIを呼び出す", async () => {
-    const result = await callGemini(
-      {
-        systemInstruction: "テストの指示",
-        contents: [{ role: "user", parts: [{ text: "こんにちは" }] }],
-        responseSchema: { type: "object" },
-      },
-      mockTokenGetter
-    )
+  it("正しいURLとbodyでGemini APIを呼び出す", async () => {
+    const result = await callGemini({
+      systemInstruction: "テストの指示",
+      contents: [{ role: "user", parts: [{ text: "こんにちは" }] }],
+      responseSchema: { type: "object" },
+    })
 
     const mockFetch = vi.mocked(global.fetch)
     expect(mockFetch).toHaveBeenCalledTimes(1)
 
     const [url, options] = mockFetch.mock.calls[0] as [string, RequestInit]
-    expect(url).toContain("aiplatform.googleapis.com")
-    expect(url).toContain("gemini-1.5-flash:generateContent")
-    expect(url).toContain("test-project")
-    expect(url).toContain("asia-northeast1")
+    expect(url).toContain("generativelanguage.googleapis.com")
+    expect(url).toContain("generateContent")
+    expect(url).toContain("test-api-key")
 
     expect(options.method).toBe("POST")
     const headers = options.headers as Record<string, string>
-    expect(headers["Authorization"]).toBe("Bearer fake-access-token")
     expect(headers["Content-Type"]).toBe("application/json")
 
     const body = JSON.parse(options.body as string) as {
@@ -165,10 +75,7 @@ describe("callGemini", () => {
     )
 
     await expect(
-      callGemini(
-        { systemInstruction: "test", contents: [], responseSchema: {} },
-        mockTokenGetter
-      )
+      callGemini({ systemInstruction: "test", contents: [], responseSchema: {} })
     ).rejects.toThrow("429")
   })
 
@@ -183,10 +90,7 @@ describe("callGemini", () => {
     )
 
     await expect(
-      callGemini(
-        { systemInstruction: "test", contents: [], responseSchema: {} },
-        mockTokenGetter
-      )
+      callGemini({ systemInstruction: "test", contents: [], responseSchema: {} })
     ).rejects.toThrow("500")
   })
 
@@ -214,14 +118,11 @@ describe("callGemini", () => {
       })
     )
 
-    const result = await callGemini(
-      {
-        systemInstruction: "test",
-        contents: [{ role: "user", parts: [{ text: "テスト" }] }],
-        responseSchema: {},
-      },
-      mockTokenGetter
-    )
+    const result = await callGemini({
+      systemInstruction: "test",
+      contents: [{ role: "user", parts: [{ text: "テスト" }] }],
+      responseSchema: {},
+    })
 
     expect(result).toEqual(expectedData)
   })
@@ -238,10 +139,7 @@ describe("callGemini", () => {
     )
 
     await expect(
-      callGemini(
-        { systemInstruction: "test", contents: [], responseSchema: {} },
-        mockTokenGetter
-      )
+      callGemini({ systemInstruction: "test", contents: [], responseSchema: {} })
     ).rejects.toThrow("空")
   })
 })

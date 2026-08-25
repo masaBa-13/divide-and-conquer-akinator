@@ -1,7 +1,7 @@
 export const runtime = "edge"
 
-import { NextRequest, NextResponse } from "next/server"
-import { callGemini } from "@/lib/vertex-ai"
+import { NextRequest } from "next/server"
+import { callGeminiStreaming } from "@/lib/vertex-ai"
 import { RESULT_SYSTEM_PROMPT } from "@/lib/prompts"
 import { ResultRequestSchema, ResultResponseSchema } from "@/lib/schemas"
 import type { ConversationEntry } from "@/lib/types"
@@ -37,17 +37,17 @@ const RESULT_RESPONSE_SCHEMA = {
   required: ["actions", "framework"],
 }
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+export async function POST(request: NextRequest): Promise<Response> {
   let body: unknown
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
+    return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 })
   }
 
   const parsed = ResultRequestSchema.safeParse(body)
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.format() }, { status: 400 })
+    return new Response(JSON.stringify({ error: parsed.error.format() }), { status: 400 })
   }
 
   const { challenge, history, selectedFramework } = parsed.data
@@ -64,20 +64,47 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  try {
-    const raw = await callGemini({
-      systemInstruction: RESULT_SYSTEM_PROMPT(selectedFramework),
-      contents,
-      responseSchema: RESULT_RESPONSE_SCHEMA,
-    })
+  const encoder = new TextEncoder()
+  const stream = new TransformStream<Uint8Array, Uint8Array>()
+  const writer = stream.writable.getWriter()
 
-    const validated = ResultResponseSchema.safeParse(raw)
-    if (!validated.success) {
-      return NextResponse.json({ error: "Invalid response from AI" }, { status: 500 })
-    }
-
-    return NextResponse.json(validated.data)
-  } catch {
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+  const send = async (event: string, data: unknown) => {
+    await writer.write(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
   }
+
+  ;(async () => {
+    try {
+      await send("thinking", {})
+
+      const raw = await callGeminiStreaming(
+        {
+          systemInstruction: RESULT_SYSTEM_PROMPT(selectedFramework),
+          contents,
+          responseSchema: RESULT_RESPONSE_SCHEMA,
+        },
+        async () => { await send("ping", {}) }
+      )
+
+      const validated = ResultResponseSchema.safeParse(raw)
+      if (!validated.success) {
+        await send("error", { message: "Invalid response from AI" })
+        return
+      }
+
+      await send("result", validated.data)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      await send("error", { message })
+    } finally {
+      await writer.close()
+    }
+  })()
+
+  return new Response(stream.readable, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+    },
+  })
 }

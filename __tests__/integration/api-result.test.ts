@@ -3,30 +3,41 @@ import { POST } from "@/app/api/result/route"
 import { NextRequest } from "next/server"
 import type { ConversationEntry } from "@/lib/types"
 
-const FAKE_SERVICE_ACCOUNT = JSON.stringify({
-  client_email: "test@test-project.iam.gserviceaccount.com",
-  private_key: "-----BEGIN PRIVATE KEY-----\nFAKE\n-----END PRIVATE KEY-----",
-})
-
 vi.mock("@/lib/vertex-ai", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/vertex-ai")>()
   return {
     ...actual,
-    callGemini: vi.fn(),
+    callGeminiStreaming: vi.fn(),
   }
 })
 
 vi.mock("@/lib/env", () => ({
   getEnv: vi.fn(() => ({
-    VERTEX_AI_PROJECT_ID: "test-project",
-    VERTEX_AI_LOCATION: "asia-northeast1",
-    VERTEX_AI_SERVICE_ACCOUNT: FAKE_SERVICE_ACCOUNT,
+    GEMINI_API_KEY: "test-api-key",
   })),
 }))
 
-import { callGemini } from "@/lib/vertex-ai"
+import { callGeminiStreaming } from "@/lib/vertex-ai"
 
-const mockCallGemini = vi.mocked(callGemini)
+const mockCallGeminiStreaming = vi.mocked(callGeminiStreaming)
+
+async function parseSseResult(res: Response): Promise<unknown> {
+  const text = await res.text()
+  const lines = text.split("\n")
+  let currentEvent = ""
+  for (const line of lines) {
+    if (line.startsWith("event: ")) {
+      currentEvent = line.slice(7).trim()
+    } else if (line.startsWith("data: ")) {
+      const data: unknown = JSON.parse(line.slice(6))
+      if (currentEvent === "result" || currentEvent === "error") {
+        return data
+      }
+      currentEvent = ""
+    }
+  }
+  return null
+}
 
 function makeRequest(body: unknown): NextRequest {
   return new NextRequest("http://localhost/api/result", {
@@ -96,7 +107,7 @@ const VALID_GEMINI_RESPONSE = {
 
 describe("POST /api/result", () => {
   beforeEach(() => {
-    mockCallGemini.mockClear()
+    mockCallGeminiStreaming.mockClear()
   })
 
   afterEach(() => {
@@ -104,13 +115,14 @@ describe("POST /api/result", () => {
   })
 
   it("正常: アクション一覧 + フレームワーク情報が返ること", async () => {
-    mockCallGemini.mockResolvedValueOnce(VALID_GEMINI_RESPONSE)
+    mockCallGeminiStreaming.mockResolvedValueOnce(VALID_GEMINI_RESPONSE)
 
     const req = makeRequest(BASE_REQUEST)
     const res = await POST(req)
 
     expect(res.status).toBe(200)
-    const data = await res.json() as typeof VALID_GEMINI_RESPONSE
+    expect(res.headers.get("Content-Type")).toBe("text/event-stream")
+    const data = await parseSseResult(res) as typeof VALID_GEMINI_RESPONSE
     expect(data.actions).toHaveLength(2)
     expect(data.actions[0].id).toBe(1)
     expect(data.actions[0].priority).toBe("high")
@@ -118,22 +130,26 @@ describe("POST /api/result", () => {
     expect(data.framework.steps).toHaveLength(4)
   })
 
-  it("Gemini不正JSON → 500が返ること", async () => {
-    mockCallGemini.mockResolvedValueOnce({ invalid: "response" })
+  it("Gemini不正JSON → errorイベントが返ること", async () => {
+    mockCallGeminiStreaming.mockResolvedValueOnce({ invalid: "response" })
 
     const req = makeRequest(BASE_REQUEST)
     const res = await POST(req)
 
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(200)
+    const data = await parseSseResult(res) as { message: string }
+    expect(data.message).toBeDefined()
   })
 
-  it("Geminiエラー → 500が返ること", async () => {
-    mockCallGemini.mockRejectedValueOnce(new Error("Gemini API エラー (500): Internal Server Error"))
+  it("Geminiエラー → errorイベントが返ること", async () => {
+    mockCallGeminiStreaming.mockRejectedValueOnce(new Error("Gemini API エラー (500): Internal Server Error"))
 
     const req = makeRequest(BASE_REQUEST)
     const res = await POST(req)
 
-    expect(res.status).toBe(500)
+    expect(res.status).toBe(200)
+    const data = await parseSseResult(res) as { message: string }
+    expect(data.message).toContain("500")
   })
 
   it("バリデーション失敗: challenge空文字 → 400が返ること", async () => {
@@ -151,13 +167,14 @@ describe("POST /api/result", () => {
   })
 
   it("selectedFrameworkがGeminiプロンプトに渡されること", async () => {
-    mockCallGemini.mockResolvedValueOnce(VALID_GEMINI_RESPONSE)
+    mockCallGeminiStreaming.mockResolvedValueOnce(VALID_GEMINI_RESPONSE)
 
     const req = makeRequest({ ...BASE_REQUEST, selectedFramework: "PDCAサイクル" })
-    await POST(req)
+    const res = await POST(req)
+    await parseSseResult(res)
 
-    expect(mockCallGemini).toHaveBeenCalledTimes(1)
-    const callArgs = mockCallGemini.mock.calls[0][0]
+    expect(mockCallGeminiStreaming).toHaveBeenCalledTimes(1)
+    const callArgs = mockCallGeminiStreaming.mock.calls[0][0]
     expect(callArgs.systemInstruction).toContain("PDCAサイクル")
   })
 })

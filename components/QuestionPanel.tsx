@@ -10,6 +10,44 @@ import { ChoiceButton } from '@/components/ui/ChoiceButton'
 import { ErrorBanner } from '@/components/ui/ErrorBanner'
 import type { AnswerResponse, ResultResponse } from '@/lib/types'
 
+async function readSseResult<T>(body: ReadableStream<Uint8Array>): Promise<T> {
+  const reader = body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split('\n')
+    buffer = lines.pop() ?? ''
+
+    let currentEvent = ''
+    for (const line of lines) {
+      if (line.startsWith('event: ')) {
+        currentEvent = line.slice(7).trim()
+      } else if (line.startsWith('data: ')) {
+        let data: unknown
+        try {
+          data = JSON.parse(line.slice(6))
+        } catch {
+          currentEvent = ''
+          continue
+        }
+        if (currentEvent === 'result') {
+          return data as T
+        } else if (currentEvent === 'error') {
+          throw new Error((data as { message: string }).message)
+        }
+        currentEvent = ''
+      }
+    }
+  }
+
+  throw new Error('SSEストリームが結果なしで終了しました')
+}
+
 export function QuestionPanel() {
   const router = useRouter()
   const {
@@ -47,9 +85,6 @@ export function QuestionPanel() {
       { role: 'user' as const, answer },
     ]
 
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 10_000)
-
     try {
       const res = await fetch('/api/answer', {
         method: 'POST',
@@ -60,68 +95,47 @@ export function QuestionPanel() {
           answer,
           selectedFramework,
         }),
-        signal: controller.signal,
       })
 
-      if (!res.ok) {
-        const data: unknown = await res.json().catch(() => ({}))
-        const msg = typeof data === 'object' && data !== null && 'error' in data
-          ? String((data as { error: unknown }).error)
-          : 'サーバーエラーが発生しました'
-        throw new Error(msg)
+      if (!res.ok || !res.body) {
+        throw new Error('接続エラーが発生しました')
       }
 
-      const answerData = (await res.json()) as AnswerResponse
+      const answerData = await readSseResult<AnswerResponse>(res.body)
       setNextQuestion(answerData)
 
       if (answerData.done) {
-        // Fetch result
         setCharacterState('thinking')
-        const resultController = new AbortController()
-        const resultTimeout = setTimeout(() => resultController.abort(), 10_000)
 
-        try {
-          const resultRes = await fetch('/api/result', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              challenge,
-              history: newHistory,
-              selectedFramework,
-            }),
-            signal: resultController.signal,
-          })
+        const resultRes = await fetch('/api/result', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            challenge,
+            history: newHistory,
+            selectedFramework,
+          }),
+        })
 
-          if (!resultRes.ok) {
-            const data: unknown = await resultRes.json().catch(() => ({}))
-            const msg = typeof data === 'object' && data !== null && 'error' in data
-              ? String((data as { error: unknown }).error)
-              : '結果取得に失敗しました'
-            throw new Error(msg)
-          }
-
-          const resultData = (await resultRes.json()) as ResultResponse
-          setCharacterState('eureka')
-          setResult(resultData)
-          setTimeout(() => router.push('/result'), 800)
-        } finally {
-          clearTimeout(resultTimeout)
+        if (!resultRes.ok || !resultRes.body) {
+          throw new Error('結果取得に失敗しました')
         }
+
+        const resultData = await readSseResult<ResultResponse>(resultRes.body)
+        setCharacterState('eureka')
+        setResult(resultData)
+        setTimeout(() => router.push('/result'), 800)
       } else {
         setCharacterState('idle')
       }
     } catch (err) {
-      const msg =
-        err instanceof Error && err.name === 'AbortError'
-          ? 'リクエストがタイムアウトしました。もう一度試してください。'
-          : err instanceof Error
-            ? err.message
-            : '予期しないエラーが発生しました'
+      const msg = err instanceof Error
+        ? err.message
+        : '予期しないエラーが発生しました'
       setApiError(msg)
       setError(msg)
       setCharacterState('idle')
     } finally {
-      clearTimeout(timeout)
       setLoading(false)
     }
   }, [currentQuestion, currentAnswerType, currentChoices, selectedFramework, challenge, history, loading, addQA, setNextQuestion, setResult, setError, router])

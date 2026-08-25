@@ -54,7 +54,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     return NextResponse.json(validated.data)
-  } catch {
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error("[/api/start] error:", msg)
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
